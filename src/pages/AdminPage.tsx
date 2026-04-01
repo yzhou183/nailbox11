@@ -15,6 +15,7 @@ interface Booking {
   time_slot: string
   basic_service_name: string
   basic_service_id: string
+  basic_service_duration: number
   addon_services: Array<{ id: string; name: string }>
   notes: string
   status: Status
@@ -60,6 +61,13 @@ function weekRangeLabel(start: Date): string {
   const sm = start.getMonth() + 1; const sd = start.getDate()
   const em = end.getMonth() + 1;   const ed = end.getDate()
   return sm === em ? `${sm}月${sd}日–${ed}日` : `${sm}月${sd}日–${em}月${ed}日`
+}
+
+function formatDuration(mins: number): string {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  if (m === 0) return `${h}小时`
+  return h > 0 ? `${h}小时${m}分` : `${m}分`
 }
 
 function sortByTime(bookings: Booking[]): Booking[] {
@@ -291,8 +299,8 @@ export default function AdminPage() {
                             <p className={`text-[11px] mt-0.5 ${b.status === 'confirmed' ? 'text-[#e8789a]' : b.status === 'pending' ? 'text-amber-500' : 'text-gray-400'}`}>
                               {b.time_slot}
                             </p>
-                            <p className="text-[10px] text-[#c090a0] mt-0.5 max-w-[120px] truncate">
-                              {b.basic_service_name.replace('（含建构）', '').replace('（包含建构）', '')}
+                            <p className="text-[10px] text-[#c090a0] mt-0.5">
+                              {formatDuration(b.basic_service_duration)}
                             </p>
                           </button>
                         ))
