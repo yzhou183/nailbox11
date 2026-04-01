@@ -196,7 +196,7 @@ export default function AdminPage() {
             </svg>
           </div>
           <div>
-            <h1 className="font-serif text-lg text-[#3d1230] leading-none">Nailbox</h1>
+            <h1 className="font-serif text-lg text-[#e8789a] leading-none">Nailbox</h1>
             <p className="text-[10px] text-[#c090a0] tracking-widest uppercase">Admin</p>
           </div>
         </div>
