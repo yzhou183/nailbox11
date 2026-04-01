@@ -155,7 +155,6 @@ export default function BookingForm() {
         return
       }
       setSubmitted(true)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch {
       setSendError('网络错误，请检查连接后重试，或直接添加微信 nailbox11 预约')
     } finally {
