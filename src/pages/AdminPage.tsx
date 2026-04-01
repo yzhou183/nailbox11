@@ -342,7 +342,7 @@ export default function AdminPage() {
                           <button
                             key={b.id}
                             onClick={() => setSelected(b)}
-                            style={{ width: `${(b.basic_service_duration / 720) * 100}%`, flexShrink: 0 }}
+                            style={{ width: `${(b.basic_service_duration / 600) * 100}%`, flexShrink: 0 }}
                             className={`text-left rounded-xl px-2 py-2 border transition-all active:scale-[0.97] overflow-hidden ${
                               b.status === 'confirmed'
                                 ? 'bg-[#fce8ed] border-[#f0a0b8]'
