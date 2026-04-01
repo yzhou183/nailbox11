@@ -78,7 +78,7 @@ router.post('/bookings', requireAuth, async (req: AuthRequest, res: Response): P
     notes?: string; status?: string
   }
 
-  if (!name || !email || !date || !timeSlot || !basicServiceId) {
+  if (!name || !date || !timeSlot || !basicServiceId) {
     res.status(400).json({ error: 'Missing required fields' })
     return
   }

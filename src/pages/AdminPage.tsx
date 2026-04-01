@@ -147,7 +147,7 @@ export default function AdminPage() {
   }
 
   const submitAdd = async () => {
-    if (!addForm.name || !addForm.email || !addForm.date || !addForm.timeSlot || !addForm.basicServiceId) return
+    if (!addForm.name || !addForm.date || !addForm.timeSlot || !addForm.basicServiceId) return
     setAddSaving(true)
     try {
       const res = await fetch(`${API}/api/admin/bookings`, {
@@ -422,7 +422,7 @@ export default function AdminPage() {
                     placeholder="客人姓名" className={inputCls} />
                 </div>
                 <div>
-                  <label className="block text-xs text-[#9a4065] mb-1">邮箱 *</label>
+                  <label className="block text-xs text-[#9a4065] mb-1">邮箱</label>
                   <input type="email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
                     placeholder="email@example.com" className={inputCls} />
                 </div>
@@ -493,7 +493,7 @@ export default function AdminPage() {
             </div>
 
             <button
-              disabled={addSaving || !addForm.name || !addForm.email || !addForm.date || !addForm.timeSlot || !addForm.basicServiceId}
+              disabled={addSaving || !addForm.name || !addForm.date || !addForm.timeSlot || !addForm.basicServiceId}
               onClick={submitAdd}
               className="mt-5 w-full py-3 bg-[#e8789a] hover:bg-[#c86080] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm rounded-full transition-colors"
             >

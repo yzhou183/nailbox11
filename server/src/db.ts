@@ -11,7 +11,7 @@ export async function initDb(): Promise<void> {
     CREATE TABLE IF NOT EXISTS bookings (
       id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name                  VARCHAR(100)  NOT NULL,
-      email                 VARCHAR(255)  NOT NULL,
+      email                 VARCHAR(255),
       wechat                VARCHAR(100),
       date                  DATE          NOT NULL,
       time_slot             VARCHAR(20)   NOT NULL,
@@ -27,6 +27,9 @@ export async function initDb(): Promise<void> {
 
     CREATE INDEX IF NOT EXISTS idx_bookings_date   ON bookings(date);
     CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+
+    -- Allow email to be nullable (safe to run multiple times)
+    ALTER TABLE bookings ALTER COLUMN email DROP NOT NULL;
   `)
   console.log('✓ Database ready')
 }
