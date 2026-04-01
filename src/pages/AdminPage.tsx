@@ -71,8 +71,8 @@ function weekRangeLabel(start: Date): string {
 function formatDuration(mins: number): string {
   const h = Math.floor(mins / 60)
   const m = mins % 60
-  if (m === 0) return `${h}小时`
-  return h > 0 ? `${h}小时${m}分` : `${m}分`
+  if (m === 0) return `${h}h`
+  return h > 0 ? `${h}h${m}m` : `${m}m`
 }
 
 
@@ -351,8 +351,8 @@ export default function AdminPage() {
                                   : 'bg-gray-50 border-gray-200 opacity-50'
                             }`}
                           >
-                            <p className="text-[11px] font-semibold text-[#c0507a] leading-snug truncate">{b.name}</p>
-                            <p className="text-[10px] mt-0.5 text-[#e8789a] truncate">{b.time_slot}</p>
+                            <p className="text-[11px] font-semibold text-[#c0507a] leading-snug">{b.name}</p>
+                            <p className="text-[10px] mt-0.5 text-[#e8789a]">{b.time_slot}</p>
                             <p className="text-[10px] text-[#f0b0c8]">{formatDuration(b.basic_service_duration)}</p>
                           </button>
                         ))
