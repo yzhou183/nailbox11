@@ -342,7 +342,7 @@ export default function AdminPage() {
                           <button
                             key={b.id}
                             onClick={() => setSelected(b)}
-                            style={{ flexGrow: b.basic_service_duration, flexShrink: 1, flexBasis: 0 }}
+                            style={{ flexGrow: b.basic_service_duration, flexShrink: 1, flexBasis: 0, maxWidth: '220px' }}
                             className={`min-w-0 text-left rounded-xl px-2 py-2 border transition-all active:scale-[0.97] ${
                               b.status === 'confirmed'
                                 ? 'bg-[#fce8ed] border-[#f0a0b8]'
