@@ -306,7 +306,7 @@ export default function AdminPage() {
               </svg>
             </button>
             <div className="text-center">
-              <p className="text-sm font-medium text-[#3d1230]">{weekRangeLabel(weekStart)}</p>
+              <p className="text-sm font-medium text-[#e8789a]">{weekRangeLabel(weekStart)}</p>
               {toDateStr(weekStart) === toDateStr(getWeekStart(now)) && (
                 <p className="text-[10px] text-[#e8789a] mt-0.5">本周</p>
               )}
