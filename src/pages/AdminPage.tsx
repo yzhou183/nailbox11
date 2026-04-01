@@ -120,6 +120,7 @@ export default function AdminPage() {
   const [addSaving,     setAddSaving]     = useState(false)
   const [acting,        setActing]        = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<Booking | null>(null)
+  const [listFilter,    setListFilter]    = useState<Status | null>(null)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -232,16 +233,64 @@ export default function AdminPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           {([
-            { label: '待确认', key: 'pending'   as Status, color: 'text-amber-500' },
-            { label: '已确认', key: 'confirmed' as Status, color: 'text-emerald-500' },
-            { label: '已拒绝', key: 'rejected'  as Status, color: 'text-rose-400' },
-          ] as const).map(({ label, key, color }) => (
-            <div key={key} className="bg-white border border-[#fce8ed] rounded-2xl p-4 text-center shadow-sm">
+            { label: '待确认', key: 'pending'   as Status, color: 'text-amber-500',   active: 'border-amber-300 bg-amber-50' },
+            { label: '已确认', key: 'confirmed' as Status, color: 'text-emerald-500', active: 'border-emerald-300 bg-emerald-50' },
+            { label: '已拒绝', key: 'rejected'  as Status, color: 'text-rose-400',    active: 'border-rose-300 bg-rose-50' },
+          ] as const).map(({ label, key, color, active }) => (
+            <button
+              key={key}
+              onClick={() => setListFilter(f => f === key ? null : key)}
+              className={`rounded-2xl p-4 text-center shadow-sm border transition-all ${
+                listFilter === key ? active : 'bg-white border-[#fce8ed] hover:border-[#f0a0b8]'
+              }`}
+            >
               <p className={`text-3xl font-light ${color}`}>{counts[key]}</p>
               <p className="text-xs text-[#c090a0] mt-0.5">{label}</p>
-            </div>
+            </button>
           ))}
         </div>
+
+        {/* Filtered list (shown when a stat card is clicked) */}
+        {listFilter && (
+          <div className="bg-white border border-[#fce8ed] rounded-2xl shadow-sm mb-5 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#fce8ed]">
+              <p className="text-sm font-medium text-[#3d1230]">
+                {STATUS_LABEL[listFilter]}
+                <span className="text-[#c090a0] font-normal ml-1.5">
+                  ({allBookings.filter(b => b.status === listFilter).length})
+                </span>
+              </p>
+              <button onClick={() => setListFilter(null)} className="text-xs text-[#c090a0] hover:text-[#e8789a] transition-colors">
+                收起
+              </button>
+            </div>
+            {allBookings.filter(b => b.status === listFilter).length === 0 ? (
+              <p className="text-center py-8 text-sm text-[#c090a0]">暂无{STATUS_LABEL[listFilter]}预约</p>
+            ) : (
+              <div className="divide-y divide-[#fce8ed]">
+                {allBookings
+                  .filter(b => b.status === listFilter)
+                  .sort((a, b) => a.date.localeCompare(b.date) || TIME_SLOTS.indexOf(a.time_slot) - TIME_SLOTS.indexOf(b.time_slot))
+                  .map(b => (
+                    <div key={b.id} onClick={() => setSelected(b)}
+                      className="flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-[#fff8fa] transition-colors">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-[#c0507a]">{b.name}</span>
+                          {b.wechat && <span className="text-[10px] text-[#c090a0]">微信 {b.wechat}</span>}
+                        </div>
+                        <p className="text-xs text-[#e8789a] mt-0.5">{b.date} · {b.time_slot}</p>
+                        <p className="text-[10px] text-[#f0b0c8]">{b.basic_service_name}</p>
+                      </div>
+                      <svg className="w-4 h-4 text-[#f0b0c8] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+                      </svg>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Week calendar */}
         <div className="bg-white border border-[#fce8ed] rounded-2xl shadow-sm overflow-hidden">
