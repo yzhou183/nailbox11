@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express'
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { pool } from '../db'
 import { requireAuth, AuthRequest } from '../middleware/auth'
+import { BASIC_SERVICES, ADDON_SERVICES } from '../services'
 
 const router = Router()
 
@@ -20,12 +20,6 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const adminUsername = process.env.ADMIN_USERNAME || 'admin'
   const adminPassword = process.env.ADMIN_PASSWORD || ''
 
-  // 用户名用固定时间比较防计时攻击，密码用 bcrypt 兼容明文比较
-  const usernameMatch = username === adminUsername
-  const passwordMatch = await bcrypt.compare(password, await bcrypt.hash(adminPassword, 10))
-    .catch(() => false)
-
-  // 简单做法：直接字符串比较（安全性足够用于单管理员）
   if (username !== adminUsername || password !== adminPassword) {
     res.status(401).json({ error: 'Invalid credentials' })
     return
@@ -41,34 +35,96 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 })
 
 // ------------------------------------------------------------------
-// GET /api/admin/bookings?status=pending
+// GET /api/admin/bookings?status=pending&date=YYYY-MM-DD
 // ------------------------------------------------------------------
 router.get('/bookings', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
-  const { status } = req.query as { status?: string }
+  const { status, date } = req.query as { status?: string; date?: string }
 
   const validStatuses = ['pending', 'confirmed', 'rejected']
-  const filter = status && validStatuses.includes(status) ? status : null
+  const conditions: string[] = []
+  const params: unknown[] = []
 
+  if (status && validStatuses.includes(status)) {
+    params.push(status)
+    conditions.push(`status = $${params.length}`)
+  }
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    params.push(date)
+    conditions.push(`date = $${params.length}`)
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
   const { rows } = await pool.query(
-    filter
-      ? `SELECT * FROM bookings WHERE status = $1 ORDER BY created_at DESC`
-      : `SELECT * FROM bookings ORDER BY created_at DESC`,
-    filter ? [filter] : [],
+    `SELECT * FROM bookings ${where} ORDER BY date ASC, time_slot ASC`,
+    params,
   )
 
   res.json(rows)
 })
 
 // ------------------------------------------------------------------
+// POST /api/admin/bookings  (管理员手动添加，跳过冲突检测，默认 confirmed)
+// ------------------------------------------------------------------
+router.post('/bookings', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+  const {
+    name, email, wechat,
+    date, timeSlot,
+    basicServiceId, addonServiceIds,
+    notes, status,
+  } = req.body as {
+    name: string; email: string; wechat?: string
+    date: string; timeSlot: string
+    basicServiceId: string; addonServiceIds?: string[]
+    notes?: string; status?: string
+  }
+
+  if (!name || !email || !date || !timeSlot || !basicServiceId) {
+    res.status(400).json({ error: 'Missing required fields' })
+    return
+  }
+
+  const basicService = BASIC_SERVICES.find(s => s.id === basicServiceId)
+  if (!basicService) {
+    res.status(400).json({ error: 'Invalid basic service' })
+    return
+  }
+
+  const selectedAddons = (addonServiceIds || [])
+    .map(id => ADDON_SERVICES.find(a => a.id === id))
+    .filter((a): a is NonNullable<typeof a> => Boolean(a))
+    .map(a => ({ id: a.id, name: a.name }))
+
+  const bookingStatus = ['pending', 'confirmed', 'rejected'].includes(status ?? '')
+    ? status
+    : 'confirmed'
+
+  const { rows } = await pool.query<{ id: string }>(
+    `INSERT INTO bookings
+       (name, email, wechat, date, time_slot,
+        basic_service_id, basic_service_name, basic_service_duration,
+        addon_services, notes, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+     RETURNING id`,
+    [
+      name, email, wechat || null, date, timeSlot,
+      basicServiceId, basicService.name, basicService.durationMins,
+      JSON.stringify(selectedAddons), notes || null,
+      bookingStatus,
+    ],
+  )
+
+  res.status(201).json({ id: rows[0].id })
+})
+
+// ------------------------------------------------------------------
 // PATCH /api/admin/bookings/:id/status
-// body: { status: 'confirmed' | 'rejected' }
 // ------------------------------------------------------------------
 router.patch('/bookings/:id/status', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   const { id }     = req.params
   const { status } = req.body as { status: string }
 
-  if (!['confirmed', 'rejected'].includes(status)) {
-    res.status(400).json({ error: "status must be 'confirmed' or 'rejected'" })
+  if (!['confirmed', 'rejected', 'pending'].includes(status)) {
+    res.status(400).json({ error: 'Invalid status' })
     return
   }
 
@@ -86,7 +142,24 @@ router.patch('/bookings/:id/status', requireAuth, async (req: AuthRequest, res: 
 })
 
 // ------------------------------------------------------------------
-// GET /api/admin/bookings/:id  (单条详情)
+// DELETE /api/admin/bookings/:id
+// ------------------------------------------------------------------
+router.delete('/bookings/:id', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+  const { rowCount } = await pool.query(
+    `DELETE FROM bookings WHERE id = $1`,
+    [req.params.id],
+  )
+
+  if (rowCount === 0) {
+    res.status(404).json({ error: 'Booking not found' })
+    return
+  }
+
+  res.json({ ok: true })
+})
+
+// ------------------------------------------------------------------
+// GET /api/admin/bookings/:id
 // ------------------------------------------------------------------
 router.get('/bookings/:id', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
   const { rows } = await pool.query(
