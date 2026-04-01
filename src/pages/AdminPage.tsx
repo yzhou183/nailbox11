@@ -75,18 +75,6 @@ function formatDuration(mins: number): string {
   return h > 0 ? `${h}小时${m}分` : `${m}分`
 }
 
-function calcEndTime(slot: string, durationMins: number): string {
-  const match = slot.match(/^(\d+):(\d+)\s*(AM|PM)$/i)
-  if (!match) return ''
-  let h = parseInt(match[1]); const m = parseInt(match[2]); const period = match[3].toUpperCase()
-  if (period === 'PM' && h !== 12) h += 12
-  if (period === 'AM' && h === 12) h = 0
-  const totalMins = h * 60 + m + durationMins
-  const eh = Math.floor(totalMins / 60) % 24; const em = totalMins % 60
-  const ep = eh >= 12 ? 'PM' : 'AM'
-  const eh12 = eh % 12 === 0 ? 12 : eh % 12
-  return `${eh12}:${String(em).padStart(2, '0')} ${ep}`
-}
 
 function sortByTime(bookings: Booking[]): Booking[] {
   return [...bookings].sort((a, b) => TIME_SLOTS.indexOf(a.time_slot) - TIME_SLOTS.indexOf(b.time_slot))
