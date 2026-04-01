@@ -332,29 +332,29 @@ export default function AdminPage() {
                 const isToday     = dateStr === todayStr
 
                 return (
-                  <div key={i} className={`flex gap-4 px-4 py-3.5 min-h-[72px] ${isToday ? 'bg-[#fff8fa]' : ''}`}>
+                  <div key={i} className={`flex gap-3 px-3 py-3 ${isToday ? 'bg-[#fff8fa]' : ''}`}>
 
                     {/* Day label */}
-                    <div className="w-12 shrink-0 pt-0.5">
-                      <p className={`text-[11px] font-medium ${isToday ? 'text-[#e8789a]' : 'text-[#f0b0c8]'}`}>
+                    <div className="w-10 shrink-0 flex flex-col items-center pt-1">
+                      <p className={`text-[10px] font-medium ${isToday ? 'text-[#e8789a]' : 'text-[#f0b0c8]'}`}>
                         {WEEKDAY_CN[day.getDay()]}
                       </p>
-                      <p className={`text-2xl font-light leading-none mt-0.5 ${isToday ? 'text-[#e8789a]' : 'text-[#d07090]'}`}>
+                      <p className={`text-xl font-light leading-none mt-0.5 ${isToday ? 'text-[#e8789a]' : 'text-[#d07090]'}`}>
                         {day.getDate()}
                       </p>
-                      <p className="text-[10px] text-[#f0b0c8] mt-0.5">{day.getMonth() + 1}月</p>
+                      <p className="text-[9px] text-[#f0b0c8] mt-0.5">{day.getMonth() + 1}月</p>
                     </div>
 
-                    {/* Booking cards */}
-                    <div className="flex-1 flex flex-wrap gap-2 items-start content-start">
+                    {/* Booking cards — 2-column grid */}
+                    <div className="flex-1 grid grid-cols-2 gap-1.5 items-start">
                       {dayBookings.length === 0 ? (
-                        <p className="text-xs text-[#e8d8de] self-center">—</p>
+                        <p className="text-xs text-[#e8d8de] self-center col-span-2 py-2">—</p>
                       ) : (
                         dayBookings.map(b => (
                           <button
                             key={b.id}
                             onClick={() => setSelected(b)}
-                            className={`text-left rounded-xl px-3 py-2 border transition-all hover:shadow-sm active:scale-[0.98] ${
+                            className={`text-left rounded-xl px-2.5 py-2 border transition-all active:scale-[0.97] ${
                               b.status === 'confirmed'
                                 ? 'bg-[#fce8ed] border-[#f0a0b8]'
                                 : b.status === 'pending'
@@ -362,12 +362,10 @@ export default function AdminPage() {
                                   : 'bg-gray-50 border-gray-200 opacity-50'
                             }`}
                           >
-                            <p className="text-xs font-semibold text-[#c0507a] leading-snug">{b.name}</p>
-                            <p className="text-[11px] mt-0.5 text-[#e8789a]">
-                              {b.time_slot}
-                            </p>
+                            <p className="text-xs font-semibold text-[#c0507a] leading-snug truncate">{b.name}</p>
+                            <p className="text-[10px] mt-0.5 text-[#e8789a]">{b.time_slot}</p>
                             <p className="text-[10px] text-[#f0b0c8] mt-0.5">
-                              {formatDuration(b.basic_service_duration)} · 结束 {calcEndTime(b.time_slot, b.basic_service_duration)}
+                              {formatDuration(b.basic_service_duration)}
                             </p>
                           </button>
                         ))
