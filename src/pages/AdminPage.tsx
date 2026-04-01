@@ -197,38 +197,38 @@ export default function AdminPage() {
     <div className="min-h-screen bg-[#fff8fa]" style={{ colorScheme: 'light' }}>
 
       {/* Header */}
-      <header className="bg-white border-b border-[#fce8ed] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#fce8ed] border border-[#f0a0b8] flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#e8789a">
+      <header className="bg-white border-b border-[#fce8ed] px-3 py-2 md:px-5 md:py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#fce8ed] border border-[#f0a0b8] flex items-center justify-center">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#e8789a">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
             </svg>
           </div>
           <div>
-            <h1 className="font-serif text-lg text-[#e8789a] leading-none">Nailbox</h1>
-            <p className="text-[10px] text-[#c090a0] tracking-widest uppercase">Admin</p>
+            <h1 className="font-serif text-base md:text-lg text-[#e8789a] leading-none">Nailbox</h1>
+            <p className="text-[9px] md:text-[10px] text-[#c090a0] tracking-widest uppercase">Admin</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
           <button
             onClick={() => { setAddForm({ ...EMPTY_FORM }); setShowAdd(true) }}
-            className="flex items-center gap-1.5 px-4 py-2 bg-[#e8789a] hover:bg-[#c86080] text-white text-xs rounded-full transition-colors"
+            className="flex items-center gap-1 md:gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-[#e8789a] hover:bg-[#c86080] text-white text-xs rounded-full transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
             添加预约
           </button>
-          <button onClick={logout} className="text-xs text-[#c090a0] hover:text-[#e8789a] px-3 py-1.5 border border-[#fce8ed] rounded-full transition-colors">
+          <button onClick={logout} className="text-xs text-[#c090a0] hover:text-[#e8789a] px-2.5 py-1.5 md:px-3 border border-[#fce8ed] rounded-full transition-colors">
             退出
           </button>
         </div>
       </header>
 
-      <div className="max-w-3xl mx-auto px-4 py-5">
+      <div className="max-w-3xl mx-auto px-2 py-3 md:px-4 md:py-5">
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-3 gap-2 mb-3 md:gap-3 md:mb-5">
           {([
             { label: '待确认', key: 'pending'   as Status, color: 'text-amber-500',   active: 'border-amber-300 bg-amber-50' },
             { label: '已确认', key: 'confirmed' as Status, color: 'text-emerald-500', active: 'border-emerald-300 bg-emerald-50' },
@@ -237,12 +237,12 @@ export default function AdminPage() {
             <button
               key={key}
               onClick={() => setListFilter(f => f === key ? null : key)}
-              className={`rounded-2xl p-4 text-center shadow-sm border transition-all ${
+              className={`rounded-2xl p-2.5 md:p-4 text-center shadow-sm border transition-all ${
                 listFilter === key ? active : 'bg-white border-[#fce8ed] hover:border-[#f0a0b8]'
               }`}
             >
-              <p className={`text-3xl font-light ${color}`}>{counts[key]}</p>
-              <p className="text-xs text-[#c090a0] mt-0.5">{label}</p>
+              <p className={`text-2xl md:text-3xl font-light ${color}`}>{counts[key]}</p>
+              <p className="text-[11px] md:text-xs text-[#c090a0] mt-0.5">{label}</p>
             </button>
           ))}
         </div>
@@ -293,10 +293,10 @@ export default function AdminPage() {
         <div className="bg-white border border-[#fce8ed] rounded-2xl shadow-sm overflow-hidden">
 
           {/* Week navigation */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#fce8ed]">
+          <div className="flex items-center justify-between px-3 py-2.5 md:px-5 md:py-4 border-b border-[#fce8ed]">
             <button
               onClick={() => setWeekStart(d => addDays(d, -7))}
-              className="p-2 hover:bg-[#fff0f5] rounded-xl transition-colors"
+              className="p-1.5 md:p-2 hover:bg-[#fff0f5] rounded-xl transition-colors"
             >
               <svg className="w-4 h-4 text-[#c090a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
@@ -310,7 +310,7 @@ export default function AdminPage() {
             </div>
             <button
               onClick={() => setWeekStart(d => addDays(d, 7))}
-              className="p-2 hover:bg-[#fff0f5] rounded-xl transition-colors"
+              className="p-1.5 md:p-2 hover:bg-[#fff0f5] rounded-xl transition-colors"
             >
               <svg className="w-4 h-4 text-[#c090a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
@@ -329,21 +329,21 @@ export default function AdminPage() {
                 const isToday     = dateStr === todayStr
 
                 return (
-                  <div key={i} className={`flex gap-3 px-3 py-3 ${isToday ? 'bg-[#fff8fa]' : ''}`}>
+                  <div key={i} className={`flex gap-2 px-2 py-2 md:gap-3 md:px-3 md:py-3 ${isToday ? 'bg-[#fff8fa]' : ''}`}>
 
                     {/* Day label */}
-                    <div className="w-10 shrink-0 flex flex-col items-center pt-1">
-                      <p className={`text-[10px] font-medium ${isToday ? 'text-[#e8789a]' : 'text-[#f0b0c8]'}`}>
+                    <div className="w-8 md:w-10 shrink-0 flex flex-col items-center pt-0.5">
+                      <p className={`text-[9px] md:text-[10px] font-medium ${isToday ? 'text-[#e8789a]' : 'text-[#f0b0c8]'}`}>
                         {WEEKDAY_CN[day.getDay()]}
                       </p>
-                      <p className={`text-xl font-light leading-none mt-0.5 ${isToday ? 'text-[#e8789a]' : 'text-[#d07090]'}`}>
+                      <p className={`text-lg md:text-xl font-light leading-none mt-0.5 ${isToday ? 'text-[#e8789a]' : 'text-[#d07090]'}`}>
                         {day.getDate()}
                       </p>
-                      <p className="text-[9px] text-[#f0b0c8] mt-0.5">{day.getMonth() + 1}月</p>
+                      <p className="text-[8px] md:text-[9px] text-[#f0b0c8] mt-0.5">{day.getMonth() + 1}月</p>
                     </div>
 
                     {/* Booking cards — single row, all fit */}
-                    <div className="flex-1 flex gap-1.5 items-stretch min-w-0">
+                    <div className="flex-1 flex gap-1 md:gap-1.5 items-stretch min-w-0">
                       {dayBookings.length === 0 ? (
                         <p className="text-xs text-[#e8d8de] self-center py-2">—</p>
                       ) : (
@@ -352,7 +352,7 @@ export default function AdminPage() {
                             key={b.id}
                             onClick={() => setSelected(b)}
                             style={{ width: '20%', flexShrink: 0 }}
-                            className={`text-left rounded-xl px-2 py-2 border transition-all active:scale-[0.97] overflow-hidden ${
+                            className={`text-left rounded-lg md:rounded-xl px-1.5 py-1.5 md:px-2 md:py-2 border transition-all active:scale-[0.97] overflow-hidden ${
                               b.status === 'confirmed'
                                 ? 'bg-[#fce8ed] border-[#f0a0b8]'
                                 : b.status === 'pending'
@@ -360,9 +360,9 @@ export default function AdminPage() {
                                   : 'bg-gray-50 border-gray-200 opacity-50'
                             }`}
                           >
-                            <p className="text-[11px] font-semibold text-[#c0507a] leading-snug">{b.name}</p>
-                            <p className="text-[10px] mt-0.5 text-[#e8789a]">{to24h(b.time_slot)}</p>
-                            <p className="text-[10px] text-[#f0b0c8]">{formatDuration(b.basic_service_duration)}</p>
+                            <p className="text-[10px] md:text-[11px] font-semibold text-[#c0507a] leading-snug">{b.name}</p>
+                            <p className="text-[9px] md:text-[10px] mt-0.5 text-[#e8789a]">{to24h(b.time_slot)}</p>
+                            <p className="text-[9px] md:text-[10px] text-[#f0b0c8]">{formatDuration(b.basic_service_duration)}</p>
                           </button>
                         ))
                       )}
