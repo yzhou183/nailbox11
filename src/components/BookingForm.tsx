@@ -1,9 +1,9 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
-import emailjs from '@emailjs/browser'
+import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react'
 import type { BookingFormData, FormErrors } from '../types'
 import { basicServices, addonServices } from '../data/services'
 
-const TIME_SLOTS = ['10:00 AM', '11:30 AM', '1:00 PM', '3:00 PM', '5:00 PM']
+const API = import.meta.env.VITE_API_URL ?? ''
+const ALL_TIME_SLOTS = ['10:00 AM', '11:30 AM', '1:00 PM', '3:00 PM', '5:00 PM']
 
 const INITIAL_FORM: BookingFormData = {
   name: '', email: '', wechat: '', date: '', time: '',
@@ -65,13 +65,35 @@ function FormSection({ title, en }: { title: string; en: string }) {
 }
 
 export default function BookingForm() {
-  const [form, setForm]         = useState<BookingFormData>(INITIAL_FORM)
-  const [errors, setErrors]     = useState<FormErrors>({})
+  const [form, setForm]           = useState<BookingFormData>(INITIAL_FORM)
+  const [errors, setErrors]       = useState<FormErrors>({})
   const [submitted, setSubmitted] = useState(false)
-  const [sending, setSending]   = useState(false)
-  const [sendError, setSendError] = useState(false)
+  const [sending, setSending]     = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
+  const [bookedSlots, setBookedSlots] = useState<string[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
 
   const today = new Date().toISOString().split('T')[0]
+
+  // Fetch availability whenever date or basic service changes
+  useEffect(() => {
+    if (!form.date) { setBookedSlots([]); return }
+    setLoadingSlots(true)
+    const params = new URLSearchParams({ date: form.date })
+    if (form.basicService) params.set('basic_service_id', form.basicService)
+    fetch(`${API}/api/bookings/availability?${params}`)
+      .then((r) => r.json())
+      .then((data) => { setBookedSlots(data.booked ?? []) })
+      .catch(() => { /* silently ignore — all slots shown as available */ })
+      .finally(() => setLoadingSlots(false))
+  }, [form.date, form.basicService])
+
+  // When basic service changes, if current time slot became booked, clear it
+  useEffect(() => {
+    if (form.time && bookedSlots.includes(form.time)) {
+      setForm((prev) => ({ ...prev, time: '' }))
+    }
+  }, [bookedSlots])
 
   const clearError = (field: keyof FormErrors) => {
     setErrors((prev) => { const next = { ...prev }; delete next[field]; return next })
@@ -101,29 +123,41 @@ export default function BookingForm() {
       document.querySelector('[data-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
-    setSending(true); setSendError(false)
-    const basic  = basicServices.find((s) => s.id === form.basicService)
-    const addons = addonServices.filter((s) => form.addonServices.includes(s.id))
+    setSending(true); setSendError(null)
     try {
-      await emailjs.send(
-        import.meta.env.VITE_EMAILJS_SERVICE_ID,
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-        {
-          customer_name:    form.name,
-          customer_email:   form.email,
-          customer_wechat:  form.wechat || '未填写',
-          appointment_date: form.date,
-          appointment_time: form.time,
-          basic_service:    basic ? `${basic.name}（${basic.price}，${basic.duration ?? ''}）` : '',
-          addon_services:   addons.length > 0 ? addons.map((a) => a.name).join('、') : '无',
-          notes:            form.notes || '无',
-        },
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
-      )
+      const res = await fetch(`${API}/api/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name:            form.name.trim(),
+          email:           form.email.trim(),
+          wechat:          form.wechat.trim(),
+          date:            form.date,
+          timeSlot:        form.time,
+          basicServiceId:  form.basicService,
+          addonServiceIds: form.addonServices,
+          notes:           form.notes.trim(),
+        }),
+      })
+      if (res.status === 409) {
+        // Slot taken — refresh availability and clear time selection
+        const params = new URLSearchParams({ date: form.date })
+        if (form.basicService) params.set('basic_service_id', form.basicService)
+        const avail = await fetch(`${API}/api/bookings/availability?${params}`).then((r) => r.json())
+        setBookedSlots(avail.booked ?? [])
+        setForm((prev) => ({ ...prev, time: '' }))
+        setSendError('该时间段已被预约，请重新选择时间')
+        return
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setSendError(body.error ?? '提交失败，请稍后重试')
+        return
+      }
       setSubmitted(true)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch {
-      setSendError(true)
+      setSendError('网络错误，请检查连接后重试，或直接添加微信 nailbox11 预约')
     } finally {
       setSending(false)
     }
@@ -143,7 +177,7 @@ export default function BookingForm() {
           </div>
           <h2 className="font-serif text-3xl text-[#3d1230] mb-1">预约申请已提交</h2>
           <p className="font-serif text-[#e8789a] italic mb-3">Booking Request Received</p>
-          <p className="text-sm text-[#9a4065] mb-8">我会通过邮件回复确认预约是否成功，请注意查收</p>
+          <p className="text-sm text-[#9a4065] mb-8">确认邮件已发送至您的邮箱，我们会尽快为您确认预约</p>
           <div className="text-left bg-white border border-[#fce8ed] rounded-2xl p-6 space-y-3 shadow-sm">
             {[
               { label: '姓名', value: form.name },
@@ -164,7 +198,7 @@ export default function BookingForm() {
             如有急事请添加微信：<span className="text-[#e8789a] font-medium"> nailbox11</span>
           </p>
           <button
-            onClick={() => { setSubmitted(false); setForm(INITIAL_FORM); setErrors({}) }}
+            onClick={() => { setSubmitted(false); setForm(INITIAL_FORM); setErrors({}); setBookedSlots([]) }}
             className="mt-8 px-6 py-2.5 border border-[#f0a0b8] text-[#e8789a] hover:bg-[#fce8ed] text-sm rounded-full transition-colors"
           >
             重新预约
@@ -207,26 +241,6 @@ export default function BookingForm() {
               <div className="sm:col-span-2">
                 <InputField label="微信号" labelEn="WeChat">
                   <input type="text" name="wechat" value={form.wechat} onChange={handleChange} placeholder="您的微信号（方便我们确认预约）" className={inputClass()} />
-                </InputField>
-              </div>
-            </div>
-          </div>
-
-          {/* Date & Time */}
-          <div>
-            <FormSection title="预约时间" en="Appointment Time" />
-            <div className="grid sm:grid-cols-2 gap-5">
-              <div data-error={errors.date ? true : undefined}>
-                <InputField label="日期" labelEn="Date" required error={errors.date}>
-                  <input type="date" name="date" value={form.date} onChange={handleChange} min={today} className={inputClass(errors.date)} />
-                </InputField>
-              </div>
-              <div data-error={errors.time ? true : undefined}>
-                <InputField label="时间" labelEn="Time" required error={errors.time}>
-                  <select name="time" value={form.time} onChange={handleChange} className={inputClass(errors.time)}>
-                    <option value="">请选择时间</option>
-                    {TIME_SLOTS.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
-                  </select>
                 </InputField>
               </div>
             </div>
@@ -307,6 +321,58 @@ export default function BookingForm() {
             </div>
           </div>
 
+          {/* Date & Time */}
+          <div>
+            <FormSection title="预约时间" en="Appointment Time" />
+            <div className="grid sm:grid-cols-2 gap-5 mb-5">
+              <div data-error={errors.date ? true : undefined} className="sm:col-span-2">
+                <InputField label="日期" labelEn="Date" required error={errors.date}>
+                  <input type="date" name="date" value={form.date} onChange={handleChange} min={today} className={inputClass(errors.date)} />
+                </InputField>
+              </div>
+            </div>
+
+            {/* Time slot picker */}
+            <div data-error={errors.time ? true : undefined}>
+              <p className="text-sm text-[#9a4065] mb-3">
+                时间<span className="text-[#e8789a] ml-1">*</span>
+                {loadingSlots && <span className="text-xs text-[#c090a0] ml-2">查询中…</span>}
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+                {ALL_TIME_SLOTS.map((slot) => {
+                  const booked   = bookedSlots.includes(slot)
+                  const selected = form.time === slot
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      disabled={booked}
+                      onClick={() => {
+                        if (!booked) {
+                          setForm((prev) => ({ ...prev, time: slot }))
+                          clearError('time')
+                        }
+                      }}
+                      className={`relative py-3 px-2 rounded-xl border text-sm font-medium transition-all duration-200 ${
+                        booked
+                          ? 'bg-[#fafafa] border-[#ede8ea] text-[#d0b8c0] cursor-not-allowed'
+                          : selected
+                            ? 'bg-[#e8789a] border-[#e8789a] text-white shadow-md'
+                            : 'bg-white border-[#fce8ed] text-[#3d1230] hover:border-[#e8789a] hover:bg-[#fff0f5]'
+                      }`}
+                    >
+                      {slot}
+                      {booked && (
+                        <span className="block text-[10px] font-normal mt-0.5 text-[#d0b8c0]">已预约</span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+              {errors.time && <p className="text-xs text-rose-400 mt-2">{errors.time}</p>}
+            </div>
+          </div>
+
           {/* Notes */}
           <div>
             <FormSection title="备注" en="Notes" />
@@ -315,7 +381,7 @@ export default function BookingForm() {
 
           {sendError && (
             <div className="px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-sm text-rose-500 text-center">
-              发送失败，请检查网络后重试，或直接添加微信 <span className="font-medium">nailbox11</span> 预约
+              {sendError}
             </div>
           )}
 
@@ -335,7 +401,7 @@ export default function BookingForm() {
                 </>
               ) : '提交预约 · Book Now'}
             </button>
-            <p className="text-center text-xs text-[#c090a0] mt-4">提交后我们将通过邮件与您确认预约</p>
+            <p className="text-center text-xs text-[#c090a0] mt-4">提交后确认邮件将发送至您的邮箱</p>
           </div>
         </form>
       </div>

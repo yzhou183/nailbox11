@@ -5,7 +5,8 @@ export interface Service {
   name: string
   nameEn: string
   price: string
-  duration?: string
+  duration?: string      // 显示用字符串，如 "1 hr 15 min"
+  durationMins?: number  // 分钟数，用于冲突检测
   category: ServiceCategory
 }
 
