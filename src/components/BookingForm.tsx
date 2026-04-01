@@ -3,7 +3,12 @@ import type { BookingFormData, FormErrors } from '../types'
 import { basicServices, addonServices } from '../data/services'
 
 const API = import.meta.env.VITE_API_URL ?? ''
-const ALL_TIME_SLOTS = ['10:00 AM', '11:30 AM', '1:00 PM', '3:00 PM', '5:00 PM']
+const ALL_TIME_SLOTS = [
+  '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+  '12:00 PM', '12:30 PM',
+  '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM',
+  '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM',
+]
 
 const INITIAL_FORM: BookingFormData = {
   name: '', email: '', wechat: '', date: '', time: '',
@@ -337,7 +342,7 @@ export default function BookingForm() {
                 时间<span className="text-[#e8789a] ml-1">*</span>
                 {loadingSlots && <span className="text-xs text-[#c090a0] ml-2">查询中…</span>}
               </p>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2.5">
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                 {ALL_TIME_SLOTS.map((slot) => {
                   const booked   = bookedSlots.includes(slot)
                   const selected = form.time === slot
