@@ -308,11 +308,11 @@ export default function AdminPage() {
                                   : 'bg-gray-50 border-gray-200 opacity-50'
                             }`}
                           >
-                            <p className="text-xs font-semibold text-[#3d1230] leading-snug">{b.name}</p>
-                            <p className={`text-[11px] mt-0.5 ${b.status === 'confirmed' ? 'text-[#e8789a]' : b.status === 'pending' ? 'text-amber-500' : 'text-gray-400'}`}>
+                            <p className="text-xs font-semibold text-[#c0507a] leading-snug">{b.name}</p>
+                            <p className="text-[11px] mt-0.5 text-[#e8789a]">
                               {b.time_slot}
                             </p>
-                            <p className="text-[10px] text-[#c090a0] mt-0.5">
+                            <p className="text-[10px] text-[#f0b0c8] mt-0.5">
                               {formatDuration(b.basic_service_duration)} · 结束 {calcEndTime(b.time_slot, b.basic_service_duration)}
                             </p>
                           </button>
