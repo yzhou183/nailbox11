@@ -2,6 +2,7 @@ import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react'
 import type { BookingFormData, FormErrors } from '../types'
 import { basicServices, addonServices } from '../data/services'
 import { useLang } from '../context/LangContext'
+import type { TKey } from '../i18n'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const ALL_TIME_SLOTS = [
@@ -16,7 +17,7 @@ const INITIAL_FORM: BookingFormData = {
   basicService: '', addonServices: [], notes: '',
 }
 
-function validate(data: BookingFormData, tv: (k: string) => string): FormErrors {
+function validate(data: BookingFormData, tv: (k: TKey) => string): FormErrors {
   const errors: FormErrors = {}
   if (!data.name.trim()) errors.name = tv('err_name')
   if (!data.email.trim()) {
