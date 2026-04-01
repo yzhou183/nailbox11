@@ -17,7 +17,7 @@
 
   body {
     background-color: #ffffff;
-    color: #3d1230;
+    color: #c0507a;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -25,5 +25,14 @@
 
   h1, h2, h3, h4 {
     font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  /* Override browser autofill blue background */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px #fff8fa inset !important;
+    -webkit-text-fill-color: #c0507a !important;
+    caret-color: #c0507a;
   }
 }
