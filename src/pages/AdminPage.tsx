@@ -282,13 +282,13 @@ export default function AdminPage() {
 
                     {/* Day label */}
                     <div className="w-12 shrink-0 pt-0.5">
-                      <p className={`text-[11px] font-medium ${isToday ? 'text-[#e8789a]' : 'text-[#c090a0]'}`}>
+                      <p className={`text-[11px] font-medium ${isToday ? 'text-[#e8789a]' : 'text-[#f0b0c8]'}`}>
                         {WEEKDAY_CN[day.getDay()]}
                       </p>
-                      <p className={`text-2xl font-light leading-none mt-0.5 ${isToday ? 'text-[#e8789a]' : 'text-[#3d1230]'}`}>
+                      <p className={`text-2xl font-light leading-none mt-0.5 ${isToday ? 'text-[#e8789a]' : 'text-[#d07090]'}`}>
                         {day.getDate()}
                       </p>
-                      <p className="text-[10px] text-[#d0b8c0] mt-0.5">{day.getMonth() + 1}月</p>
+                      <p className="text-[10px] text-[#f0b0c8] mt-0.5">{day.getMonth() + 1}月</p>
                     </div>
 
                     {/* Booking cards */}
