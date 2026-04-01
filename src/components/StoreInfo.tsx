@@ -51,7 +51,7 @@ export default function StoreInfo() {
         {/* Title */}
         <div className="text-center mb-14">
           <p className="text-[10px] tracking-[0.42em] uppercase text-[#c090a0] mb-3">How to Find Us</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-[#3d1230] font-light">到店指南</h2>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#c0507a] font-light">到店指南</h2>
           <p className="font-serif text-lg text-[#e8789a] italic mt-1">Store Info & Parking</p>
           <div className="flex items-center justify-center gap-3 mt-5">
             <div className="w-10 h-px bg-[#f9d0da]" />
@@ -65,7 +65,7 @@ export default function StoreInfo() {
         <div className="grid md:grid-cols-2 gap-10 items-start">
           {/* Store Info */}
           <div>
-            <h3 className="font-serif text-2xl text-[#3d1230] mb-6">
+            <h3 className="font-serif text-2xl text-[#c0507a] mb-6">
               店铺信息
               <span className="text-sm font-sans text-[#c090a0] ml-2 font-normal">/ Store Info</span>
             </h3>
@@ -79,7 +79,7 @@ export default function StoreInfo() {
                   </svg>
                 }
               >
-                <p className="text-[#3d1230] font-medium">888 S Hope St</p>
+                <p className="text-[#c0507a] font-medium">888 S Hope St</p>
                 <p className="text-[#9a4065] text-sm">Los Angeles, CA 90017</p>
               </InfoCard>
 
@@ -91,7 +91,7 @@ export default function StoreInfo() {
                   </svg>
                 }
               >
-                <p className="text-[#3d1230] font-medium">nailbox11</p>
+                <p className="text-[#c0507a] font-medium">nailbox11</p>
                 <p className="text-[#9a4065] text-sm">预约咨询请添加微信</p>
               </InfoCard>
             </div>
@@ -99,7 +99,7 @@ export default function StoreInfo() {
 
           {/* Parking Steps */}
           <div>
-            <h3 className="font-serif text-2xl text-[#3d1230] mb-6">
+            <h3 className="font-serif text-2xl text-[#c0507a] mb-6">
               停车说明
               <span className="text-sm font-sans text-[#c090a0] ml-2 font-normal">/ Parking Guide</span>
             </h3>
@@ -119,7 +119,7 @@ export default function StoreInfo() {
                       <span className="font-serif text-sm font-medium text-[#e8789a]">{item.step}</span>
                     </div>
                     <div className="pt-1">
-                      <p className="font-medium text-[#3d1230] text-sm mb-1.5">{item.title}</p>
+                      <p className="font-medium text-[#c0507a] text-sm mb-1.5">{item.title}</p>
                       <p className="text-sm text-[#9a4065] leading-relaxed">{item.desc}</p>
                       {item.warning && (
                         <p className="text-xs text-[#e8789a] mt-2 font-medium flex items-center gap-1.5">

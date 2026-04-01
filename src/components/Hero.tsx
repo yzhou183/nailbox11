@@ -73,7 +73,7 @@ export default function Hero() {
           Los Angeles · 精品美甲
         </p>
 
-        <h1 className="font-serif text-[78px] md:text-[96px] lg:text-[108px] font-light text-[#3d1230] tracking-[0.14em] leading-none mb-7 animate-fade-up" style={{ animationDelay: '0.15s' }}>
+        <h1 className="font-serif text-[78px] md:text-[96px] lg:text-[108px] font-light text-[#c0507a] tracking-[0.14em] leading-none mb-7 animate-fade-up" style={{ animationDelay: '0.15s' }}>
           Nail Box
         </h1>
 
@@ -98,7 +98,7 @@ export default function Hero() {
         {/* WeChat Card */}
         <div className="inline-flex flex-col items-center gap-1.5 bg-white border border-[#fce8ed] rounded-2xl px-8 py-5 mb-10 shadow-sm animate-fade-up" style={{ animationDelay: '0.48s' }}>
           <p className="text-[10px] tracking-[0.32em] uppercase text-[#c090a0]">微信 / WeChat</p>
-          <p className="text-2xl font-semibold text-[#3d1230] tracking-wider">nailbox11</p>
+          <p className="text-2xl font-semibold text-[#c0507a] tracking-wider">nailbox11</p>
           <p className="text-xs text-[#c090a0]">预约咨询请添加微信</p>
         </div>
 

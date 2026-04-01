@@ -52,7 +52,7 @@ function InputField({ label, labelEn, required, error, children }: {
 }
 
 const inputClass = (error?: string) =>
-  `w-full px-4 py-3 rounded-xl border bg-white text-sm text-[#3d1230] placeholder-[#d0a0b0] outline-none transition-all ${
+  `w-full px-4 py-3 rounded-xl border bg-white text-sm text-[#c0507a] placeholder-[#d0a0b0] outline-none transition-all ${
     error
       ? 'border-rose-300 focus:border-rose-400 focus:ring-2 focus:ring-rose-100'
       : 'border-[#fce8ed] focus:border-[#e8789a] focus:ring-2 focus:ring-[#e8789a]/10'
@@ -61,7 +61,7 @@ const inputClass = (error?: string) =>
 function FormSection({ title, en }: { title: string; en: string }) {
   return (
     <div className="pb-2 border-b border-[#fce8ed] mb-5">
-      <h3 className="font-serif text-lg text-[#3d1230]">
+      <h3 className="font-serif text-lg text-[#c0507a]">
         {title}
         <span className="text-sm font-sans text-[#c090a0] ml-2 font-normal">/ {en}</span>
       </h3>
@@ -179,7 +179,7 @@ export default function BookingForm() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
-          <h2 className="font-serif text-3xl text-[#3d1230] mb-1">预约申请已提交</h2>
+          <h2 className="font-serif text-3xl text-[#c0507a] mb-1">预约申请已提交</h2>
           <p className="font-serif text-[#e8789a] italic mb-3">Booking Request Received</p>
           <p className="text-sm text-[#9a4065] mb-8">确认邮件已发送至您的邮箱，我们会尽快为您确认预约</p>
           <div className="text-left bg-white border border-[#fce8ed] rounded-2xl p-6 space-y-3 shadow-sm">
@@ -194,7 +194,7 @@ export default function BookingForm() {
             ].filter(Boolean).map((row) => (
               <div key={row!.label} className="flex justify-between gap-4 text-sm">
                 <span className="text-[#c090a0] shrink-0">{row!.label}</span>
-                <span className="text-[#3d1230] text-right">{row!.value}</span>
+                <span className="text-[#c0507a] text-right">{row!.value}</span>
               </div>
             ))}
           </div>
@@ -217,7 +217,7 @@ export default function BookingForm() {
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
           <p className="text-[10px] tracking-[0.42em] uppercase text-[#c090a0] mb-3">Book Appointment</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-[#3d1230] font-light">立即预约</h2>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#c0507a] font-light">立即预约</h2>
           <div className="flex items-center justify-center gap-3 mt-5">
             <div className="w-10 h-px bg-[#f9d0da]" />
             <svg width="8" height="8" viewBox="0 0 12 12">
@@ -275,7 +275,7 @@ export default function BookingForm() {
                           {selected && <div className="w-2 h-2 rounded-full bg-[#e8789a]" />}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#3d1230]">{service.name}</p>
+                          <p className="text-sm font-medium text-[#c0507a]">{service.name}</p>
                           {service.duration && <p className="text-xs text-[#c090a0]">{service.duration}</p>}
                         </div>
                       </div>
@@ -312,7 +312,7 @@ export default function BookingForm() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-[#3d1230] leading-snug">{service.name}</p>
+                          <p className="text-xs font-medium text-[#c0507a] leading-snug">{service.name}</p>
                           {service.duration && <p className="text-[10px] text-[#c090a0]">{service.duration}</p>}
                         </div>
                       </div>
@@ -362,7 +362,7 @@ export default function BookingForm() {
                           ? 'bg-[#fafafa] border-[#ede8ea] text-[#d0b8c0] cursor-not-allowed'
                           : selected
                             ? 'bg-[#e8789a] border-[#e8789a] text-white shadow-md'
-                            : 'bg-white border-[#fce8ed] text-[#3d1230] hover:border-[#e8789a] hover:bg-[#fff0f5]'
+                            : 'bg-white border-[#fce8ed] text-[#c0507a] hover:border-[#e8789a] hover:bg-[#fff0f5]'
                       }`}
                     >
                       {slot}

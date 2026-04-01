@@ -26,7 +26,7 @@ export default function Header() {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <a href="#" className="flex flex-col leading-none group">
-          <span className="font-serif text-[22px] font-medium tracking-[0.18em] text-[#3d1230] group-hover:text-[#e8789a] transition-colors duration-300">
+          <span className="font-serif text-[22px] font-medium tracking-[0.18em] text-[#c0507a] group-hover:text-[#e8789a] transition-colors duration-300">
             Nail Box
           </span>
           <span className="text-[9px] tracking-[0.28em] text-[#c090a0] uppercase mt-0.5">

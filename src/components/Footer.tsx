@@ -28,7 +28,7 @@ export default function Footer() {
 
         {/* Brand centerpiece */}
         <div className="text-center mb-12">
-          <h3 className="font-serif text-3xl font-light tracking-[0.22em] text-[#3d1230] mb-1">Nail Box</h3>
+          <h3 className="font-serif text-3xl font-light tracking-[0.22em] text-[#c0507a] mb-1">Nail Box</h3>
           <p className="text-[10px] tracking-[0.3em] uppercase text-[#e8789a] mb-5">精品美甲工作室</p>
           <div className="flex items-center justify-center gap-3">
             <div className="w-16 h-px bg-[#f0a0b8]/50" />
@@ -50,7 +50,7 @@ export default function Footer() {
           <div>
             <h4 className="text-[10px] tracking-[0.32em] uppercase text-[#e8789a] mb-5">联系我们 / Contact</h4>
             <div className="space-y-2.5">
-              <p className="text-[#9a4065] text-sm">微信 WeChat：<span className="text-[#3d1230] font-medium">nailbox11</span></p>
+              <p className="text-[#9a4065] text-sm">微信 WeChat：<span className="text-[#c0507a] font-medium">nailbox11</span></p>
               <p className="text-[#9a4065] text-sm">888 S Hope St</p>
               <p className="text-[#9a4065] text-sm">Los Angeles, CA 90017</p>
             </div>
