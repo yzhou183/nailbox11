@@ -68,6 +68,15 @@ function weekRangeLabel(start: Date): string {
   return sm === em ? `${sm}月${sd}日–${ed}日` : `${sm}月${sd}日–${em}月${ed}日`
 }
 
+function to24h(slot: string): string {
+  const match = slot.match(/^(\d+):(\d+)\s*(AM|PM)$/i)
+  if (!match) return slot
+  let h = parseInt(match[1]); const m = match[2]; const period = match[3].toUpperCase()
+  if (period === 'PM' && h !== 12) h += 12
+  if (period === 'AM' && h === 12) h = 0
+  return `${String(h).padStart(2, '0')}:${m}`
+}
+
 function formatDuration(mins: number): string {
   const h = Math.floor(mins / 60)
   const m = mins % 60
@@ -352,7 +361,7 @@ export default function AdminPage() {
                             }`}
                           >
                             <p className="text-[11px] font-semibold text-[#c0507a] leading-snug">{b.name}</p>
-                            <p className="text-[10px] mt-0.5 text-[#e8789a]">{b.time_slot}</p>
+                            <p className="text-[10px] mt-0.5 text-[#e8789a]">{to24h(b.time_slot)}</p>
                             <p className="text-[10px] text-[#f0b0c8]">{formatDuration(b.basic_service_duration)}</p>
                           </button>
                         ))
