@@ -44,7 +44,7 @@ export default function AdminLogin() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="#e8789a"/>
             </svg>
           </div>
-          <h1 className="font-serif text-2xl text-[#3d1230] mb-1">Nailbox 管理后台</h1>
+          <h1 className="font-serif text-2xl text-[#c0507a] mb-1">Nailbox 管理后台</h1>
           <p className="text-sm text-[#c090a0]">Admin Dashboard</p>
         </div>
 
@@ -58,7 +58,7 @@ export default function AdminLogin() {
               placeholder="admin"
               required
               autoComplete="username"
-              className="w-full px-4 py-3 rounded-xl border border-[#fce8ed] bg-white text-sm text-[#3d1230] placeholder-[#d0a0b0] outline-none focus:border-[#e8789a] focus:ring-2 focus:ring-[#e8789a]/10 transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-[#fce8ed] bg-white text-sm text-[#c0507a] placeholder-[#d0a0b0] outline-none focus:border-[#e8789a] focus:ring-2 focus:ring-[#e8789a]/10 transition-all"
             />
           </div>
           <div>
@@ -70,7 +70,7 @@ export default function AdminLogin() {
               placeholder="••••••••"
               required
               autoComplete="current-password"
-              className="w-full px-4 py-3 rounded-xl border border-[#fce8ed] bg-white text-sm text-[#3d1230] placeholder-[#d0a0b0] outline-none focus:border-[#e8789a] focus:ring-2 focus:ring-[#e8789a]/10 transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-[#fce8ed] bg-white text-sm text-[#c0507a] placeholder-[#d0a0b0] outline-none focus:border-[#e8789a] focus:ring-2 focus:ring-[#e8789a]/10 transition-all"
             />
           </div>
 
