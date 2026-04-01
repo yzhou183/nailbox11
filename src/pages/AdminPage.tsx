@@ -26,29 +26,47 @@ const STATUS_LABEL: Record<Status, string> = {
   confirmed: '已确认',
   rejected:  '已拒绝',
 }
-const STATUS_STYLE: Record<Status, string> = {
-  pending:   'bg-amber-50 text-amber-600 border-amber-200',
-  confirmed: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-  rejected:  'bg-rose-50 text-rose-400 border-rose-200',
-}
 
 function authHeaders() {
-  return { 'Authorization': `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' }
+  return { Authorization: `Bearer ${localStorage.getItem('admin_token')}`, 'Content-Type': 'application/json' }
 }
 
-// ── Calendar helpers ──────────────────────────────────────────────
-function daysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate()
-}
-function firstDayOfMonth(year: number, month: number) {
-  return new Date(year, month, 1).getDay() // 0=Sun
-}
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
-const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']
+// ── date helpers ──────────────────────────────────────────────────
+const WEEKDAY_CN = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const TIME_SLOTS  = ['10:00 AM', '11:30 AM', '1:00 PM', '3:00 PM', '5:00 PM']
 
-// ── Add Booking Form ──────────────────────────────────────────────
-const TIME_SLOTS = ['10:00 AM', '11:30 AM', '1:00 PM', '3:00 PM', '5:00 PM']
+/** Normalize DB date (may be ISO timestamp) to YYYY-MM-DD */
+function normalizeDate(d: string): string { return d.slice(0, 10) }
 
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function getWeekStart(d: Date): Date {
+  const date = new Date(d)
+  date.setDate(date.getDate() - date.getDay()) // Sunday
+  date.setHours(0, 0, 0, 0)
+  return date
+}
+
+function addDays(d: Date, n: number): Date {
+  const date = new Date(d)
+  date.setDate(date.getDate() + n)
+  return date
+}
+
+function weekRangeLabel(start: Date): string {
+  const end = addDays(start, 6)
+  const sm = start.getMonth() + 1; const sd = start.getDate()
+  const em = end.getMonth() + 1;   const ed = end.getDate()
+  return sm === em ? `${sm}月${sd}日–${ed}日` : `${sm}月${sd}日–${em}月${ed}日`
+}
+
+function sortByTime(bookings: Booking[]): Booking[] {
+  return [...bookings].sort((a, b) => TIME_SLOTS.indexOf(a.time_slot) - TIME_SLOTS.indexOf(b.time_slot))
+}
+
+// ── Add form ──────────────────────────────────────────────────────
 interface AddForm {
   name: string; email: string; wechat: string
   date: string; timeSlot: string
@@ -63,26 +81,18 @@ const EMPTY_FORM: AddForm = {
 // ─────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const navigate = useNavigate()
-
-  // all bookings (fetched once, filtered in UI)
   const [allBookings, setAllBookings] = useState<Booking[]>([])
   const [loading, setLoading]         = useState(true)
 
-  // calendar state
   const now = new Date()
-  const [calYear,  setCalYear]  = useState(now.getFullYear())
-  const [calMonth, setCalMonth] = useState(now.getMonth())
-  const [selDate,  setSelDate]  = useState<string | null>(null) // 'YYYY-MM-DD' or null = all
+  const todayStr = toDateStr(now)
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(now))
 
-  // list filter
-  const [statusFilter, setStatusFilter] = useState<Status | 'all'>('all')
-
-  // modals
-  const [selected,    setSelected]    = useState<Booking | null>(null)
-  const [showAdd,     setShowAdd]     = useState(false)
-  const [addForm,     setAddForm]     = useState<AddForm>(EMPTY_FORM)
-  const [addSaving,   setAddSaving]   = useState(false)
-  const [acting,      setActing]      = useState(false)
+  const [selected,      setSelected]      = useState<Booking | null>(null)
+  const [showAdd,       setShowAdd]       = useState(false)
+  const [addForm,       setAddForm]       = useState<AddForm>(EMPTY_FORM)
+  const [addSaving,     setAddSaving]     = useState(false)
+  const [acting,        setActing]        = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<Booking | null>(null)
 
   const fetchAll = useCallback(async () => {
@@ -90,32 +100,29 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${API}/api/admin/bookings`, { headers: authHeaders() })
       if (res.status === 401) { navigate('/admin/login'); return }
-      setAllBookings(await res.json())
+      const rows: Booking[] = await res.json()
+      // normalize dates from DB
+      setAllBookings(rows.map(b => ({ ...b, date: normalizeDate(b.date) })))
     } catch { /* ignore */ }
     finally { setLoading(false) }
   }, [navigate])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // ── derived data ────────────────────────────────────────────────
-  // Map date → bookings for calendar dots
+  // group by normalized date
   const byDate = allBookings.reduce<Record<string, Booking[]>>((acc, b) => {
     ;(acc[b.date] ??= []).push(b)
     return acc
   }, {})
-
-  // filtered list
-  const listBookings = allBookings.filter(b => {
-    const dateOk   = selDate ? b.date === selDate : true
-    const statusOk = statusFilter === 'all' ? true : b.status === statusFilter
-    return dateOk && statusOk
-  })
 
   const counts = {
     pending:   allBookings.filter(b => b.status === 'pending').length,
     confirmed: allBookings.filter(b => b.status === 'confirmed').length,
     rejected:  allBookings.filter(b => b.status === 'rejected').length,
   }
+
+  // week days
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
 
   // ── actions ─────────────────────────────────────────────────────
   const updateStatus = async (id: string, status: Status) => {
@@ -134,8 +141,7 @@ export default function AdminPage() {
     setActing(true)
     try {
       await fetch(`${API}/api/admin/bookings/${id}`, { method: 'DELETE', headers: authHeaders() })
-      setDeleteConfirm(null)
-      setSelected(null)
+      setDeleteConfirm(null); setSelected(null)
       await fetchAll()
     } finally { setActing(false) }
   }
@@ -154,29 +160,11 @@ export default function AdminPage() {
           notes: addForm.notes, status: addForm.status,
         }),
       })
-      if (res.ok) {
-        setShowAdd(false)
-        setAddForm(EMPTY_FORM)
-        await fetchAll()
-      }
+      if (res.ok) { setShowAdd(false); setAddForm(EMPTY_FORM); await fetchAll() }
     } finally { setAddSaving(false) }
   }
 
   const logout = () => { localStorage.removeItem('admin_token'); navigate('/admin/login') }
-
-  // ── calendar rendering ──────────────────────────────────────────
-  const totalDays   = daysInMonth(calYear, calMonth)
-  const startOffset = firstDayOfMonth(calYear, calMonth)
-  const todayStr    = now.toISOString().split('T')[0]
-
-  const prevMonth = () => {
-    if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11) }
-    else setCalMonth(m => m - 1)
-  }
-  const nextMonth = () => {
-    if (calMonth === 11) { setCalYear(y => y + 1); setCalMonth(0) }
-    else setCalMonth(m => m + 1)
-  }
 
   const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-[#fce8ed] bg-white text-sm text-[#3d1230] placeholder-[#d0a0b0] outline-none focus:border-[#e8789a] focus:ring-2 focus:ring-[#e8789a]/10 transition-all'
 
@@ -185,7 +173,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-[#fff8fa]" style={{ colorScheme: 'light' }}>
 
       {/* Header */}
-      <header className="bg-white border-b border-[#fce8ed] px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <header className="bg-white border-b border-[#fce8ed] px-5 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-[#fce8ed] border border-[#f0a0b8] flex items-center justify-center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#e8789a">
@@ -197,9 +185,9 @@ export default function AdminPage() {
             <p className="text-[10px] text-[#c090a0] tracking-widest uppercase">Admin</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => { setAddForm({ ...EMPTY_FORM, date: selDate ?? '' }); setShowAdd(true) }}
+            onClick={() => { setAddForm({ ...EMPTY_FORM }); setShowAdd(true) }}
             className="flex items-center gap-1.5 px-4 py-2 bg-[#e8789a] hover:bg-[#c86080] text-white text-xs rounded-full transition-colors"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -213,10 +201,10 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-4 py-5">
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-5">
           {([
             { label: '待确认', key: 'pending'   as Status, color: 'text-amber-500' },
             { label: '已确认', key: 'confirmed' as Status, color: 'text-emerald-500' },
@@ -229,185 +217,110 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Main layout */}
-        <div className="flex flex-col lg:flex-row gap-5">
+        {/* Week calendar */}
+        <div className="bg-white border border-[#fce8ed] rounded-2xl shadow-sm overflow-hidden">
 
-          {/* ── Calendar ── */}
-          <div className="bg-white border border-[#fce8ed] rounded-2xl p-5 shadow-sm lg:w-80 shrink-0">
-            {/* Month nav */}
-            <div className="flex items-center justify-between mb-4">
-              <button onClick={prevMonth} className="p-1.5 hover:bg-[#fff0f5] rounded-lg transition-colors">
-                <svg className="w-4 h-4 text-[#c090a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-              <span className="text-sm font-medium text-[#3d1230]">{calYear}年 {MONTH_NAMES[calMonth]}</span>
-              <button onClick={nextMonth} className="p-1.5 hover:bg-[#fff0f5] rounded-lg transition-colors">
-                <svg className="w-4 h-4 text-[#c090a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-              </button>
+          {/* Week navigation */}
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#fce8ed]">
+            <button
+              onClick={() => setWeekStart(d => addDays(d, -7))}
+              className="p-2 hover:bg-[#fff0f5] rounded-xl transition-colors"
+            >
+              <svg className="w-4 h-4 text-[#c090a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div className="text-center">
+              <p className="text-sm font-medium text-[#3d1230]">{weekRangeLabel(weekStart)}</p>
+              {toDateStr(weekStart) === toDateStr(getWeekStart(now)) && (
+                <p className="text-[10px] text-[#e8789a] mt-0.5">本周</p>
+              )}
             </div>
+            <button
+              onClick={() => setWeekStart(d => addDays(d, 7))}
+              className="p-2 hover:bg-[#fff0f5] rounded-xl transition-colors"
+            >
+              <svg className="w-4 h-4 text-[#c090a0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
 
-            {/* Weekday headers */}
-            <div className="grid grid-cols-7 mb-1">
-              {WEEKDAYS.map(d => (
-                <div key={d} className="text-center text-[10px] text-[#c090a0] py-1">{d}</div>
-              ))}
-            </div>
-
-            {/* Day grid */}
-            <div className="grid grid-cols-7 gap-y-1">
-              {Array.from({ length: startOffset }).map((_, i) => <div key={`e${i}`} />)}
-              {Array.from({ length: totalDays }).map((_, i) => {
-                const day      = i + 1
-                const dateStr  = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                const dayBooks = byDate[dateStr] ?? []
-                const isToday  = dateStr === todayStr
-                const isSel    = dateStr === selDate
-                const hasPend  = dayBooks.some(b => b.status === 'pending')
-                const hasConf  = dayBooks.some(b => b.status === 'confirmed')
+          {/* Day rows */}
+          {loading ? (
+            <div className="py-12 text-center text-sm text-[#c090a0]">加载中…</div>
+          ) : (
+            <div className="divide-y divide-[#fce8ed]">
+              {weekDays.map((day, i) => {
+                const dateStr     = toDateStr(day)
+                const dayBookings = sortByTime(byDate[dateStr] ?? [])
+                const isToday     = dateStr === todayStr
 
                 return (
-                  <button
-                    key={day}
-                    onClick={() => setSelDate(isSel ? null : dateStr)}
-                    className={`flex flex-col items-center py-1 rounded-xl transition-all ${
-                      isSel
-                        ? 'bg-[#e8789a] text-white'
-                        : isToday
-                          ? 'bg-[#fff0f5] text-[#e8789a] font-semibold'
-                          : 'hover:bg-[#fff5f8] text-[#3d1230]'
-                    }`}
-                  >
-                    <span className="text-xs leading-none">{day}</span>
-                    <div className="flex gap-0.5 mt-0.5 h-1.5">
-                      {hasPend && <span className={`w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white/80' : 'bg-amber-400'}`} />}
-                      {hasConf && <span className={`w-1.5 h-1.5 rounded-full ${isSel ? 'bg-white/80' : 'bg-emerald-400'}`} />}
+                  <div key={i} className={`flex gap-4 px-4 py-3.5 min-h-[72px] ${isToday ? 'bg-[#fff8fa]' : ''}`}>
+
+                    {/* Day label */}
+                    <div className="w-12 shrink-0 pt-0.5">
+                      <p className={`text-[11px] font-medium ${isToday ? 'text-[#e8789a]' : 'text-[#c090a0]'}`}>
+                        {WEEKDAY_CN[day.getDay()]}
+                      </p>
+                      <p className={`text-2xl font-light leading-none mt-0.5 ${isToday ? 'text-[#e8789a]' : 'text-[#3d1230]'}`}>
+                        {day.getDate()}
+                      </p>
+                      <p className="text-[10px] text-[#d0b8c0] mt-0.5">{day.getMonth() + 1}月</p>
                     </div>
-                  </button>
+
+                    {/* Booking cards */}
+                    <div className="flex-1 flex flex-wrap gap-2 items-start content-start">
+                      {dayBookings.length === 0 ? (
+                        <p className="text-xs text-[#e8d8de] self-center">—</p>
+                      ) : (
+                        dayBookings.map(b => (
+                          <button
+                            key={b.id}
+                            onClick={() => setSelected(b)}
+                            className={`text-left rounded-xl px-3 py-2 border transition-all hover:shadow-sm active:scale-[0.98] ${
+                              b.status === 'confirmed'
+                                ? 'bg-[#fce8ed] border-[#f0a0b8]'
+                                : b.status === 'pending'
+                                  ? 'bg-amber-50 border-amber-200'
+                                  : 'bg-gray-50 border-gray-200 opacity-50'
+                            }`}
+                          >
+                            <p className="text-xs font-semibold text-[#3d1230] leading-snug">{b.name}</p>
+                            <p className={`text-[11px] mt-0.5 ${b.status === 'confirmed' ? 'text-[#e8789a]' : b.status === 'pending' ? 'text-amber-500' : 'text-gray-400'}`}>
+                              {b.time_slot}
+                            </p>
+                            <p className="text-[10px] text-[#c090a0] mt-0.5 max-w-[120px] truncate">
+                              {b.basic_service_name.replace('（含建构）', '').replace('（包含建构）', '')}
+                            </p>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 )
               })}
             </div>
-
-            {/* Legend */}
-            <div className="flex gap-4 mt-4 pt-3 border-t border-[#fce8ed]">
-              <div className="flex items-center gap-1.5 text-[10px] text-[#c090a0]">
-                <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />待确认
-              </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-[#c090a0]">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />已确认
-              </div>
-            </div>
-
-            {selDate && (
-              <button
-                onClick={() => setSelDate(null)}
-                className="mt-3 w-full text-xs text-[#c090a0] hover:text-[#e8789a] py-1.5 border border-[#fce8ed] rounded-xl transition-colors"
-              >
-                显示全部日期
-              </button>
-            )}
-          </div>
-
-          {/* ── Booking list ── */}
-          <div className="flex-1 min-w-0">
-            {/* List header */}
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm text-[#3d1230] font-medium">
-                {selDate ? `${selDate} 的预约` : '全部预约'}
-                <span className="text-[#c090a0] font-normal ml-1">({listBookings.length})</span>
-              </p>
-              {/* Status filter */}
-              <div className="flex gap-1 bg-white border border-[#fce8ed] rounded-xl p-1">
-                {([
-                  { key: 'all' as const,       label: '全部' },
-                  { key: 'pending' as const,   label: '待确认' },
-                  { key: 'confirmed' as const, label: '已确认' },
-                  { key: 'rejected' as const,  label: '已拒绝' },
-                ]).map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setStatusFilter(key)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      statusFilter === key ? 'bg-[#e8789a] text-white shadow-sm' : 'text-[#9a4065] hover:bg-[#fff0f5]'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="text-center py-16 text-[#c090a0] text-sm">加载中…</div>
-            ) : listBookings.length === 0 ? (
-              <div className="text-center py-16 text-[#c090a0] text-sm">暂无预约</div>
-            ) : (
-              <div className="space-y-3">
-                {listBookings.map(b => (
-                  <div
-                    key={b.id}
-                    onClick={() => setSelected(b)}
-                    className="bg-white border border-[#fce8ed] rounded-2xl p-4 cursor-pointer hover:border-[#e8789a] hover:shadow-sm transition-all"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-medium text-[#3d1230] text-sm">{b.name}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${STATUS_STYLE[b.status]}`}>
-                            {STATUS_LABEL[b.status]}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#9a4065]">{b.date} · {b.time_slot}</p>
-                        <p className="text-xs text-[#c090a0] mt-0.5 truncate">{b.basic_service_name}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-xs text-[#c090a0]">{b.email}</p>
-                        {b.wechat && <p className="text-xs text-[#c090a0]">微信: {b.wechat}</p>}
-                      </div>
-                    </div>
-                    {b.status === 'pending' && (
-                      <div className="flex gap-2 mt-3" onClick={e => e.stopPropagation()}>
-                        <button
-                          disabled={acting}
-                          onClick={() => updateStatus(b.id, 'confirmed')}
-                          className="flex-1 py-1.5 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-xl transition-colors disabled:opacity-50"
-                        >确认</button>
-                        <button
-                          disabled={acting}
-                          onClick={() => updateStatus(b.id, 'rejected')}
-                          className="flex-1 py-1.5 text-xs bg-rose-50 hover:bg-rose-100 text-rose-400 border border-rose-200 rounded-xl transition-colors disabled:opacity-50"
-                        >拒绝</button>
-                        <button
-                          disabled={acting}
-                          onClick={() => setDeleteConfirm(b)}
-                          className="px-3 py-1.5 text-xs bg-gray-50 hover:bg-gray-100 text-gray-400 border border-gray-200 rounded-xl transition-colors disabled:opacity-50"
-                        >删除</button>
-                      </div>
-                    )}
-                    {b.status !== 'pending' && (
-                      <div className="flex justify-end mt-2" onClick={e => e.stopPropagation()}>
-                        <button
-                          disabled={acting}
-                          onClick={() => setDeleteConfirm(b)}
-                          className="text-[10px] text-[#d0b0b8] hover:text-rose-400 transition-colors"
-                        >删除</button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
+
+        {/* Jump to today */}
+        {toDateStr(weekStart) !== toDateStr(getWeekStart(now)) && (
+          <button
+            onClick={() => setWeekStart(getWeekStart(now))}
+            className="mt-3 w-full text-xs text-[#c090a0] hover:text-[#e8789a] py-2 border border-[#fce8ed] rounded-xl bg-white transition-colors"
+          >
+            回到本周
+          </button>
+        )}
       </div>
 
       {/* ── Detail Modal ── */}
       {selected && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 z-50" onClick={() => setSelected(null)}>
           <div className="bg-white rounded-2xl border border-[#fce8ed] w-full max-w-md p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-1">
               <h2 className="font-serif text-lg text-[#3d1230]">预约详情</h2>
               <button onClick={() => setSelected(null)} className="text-[#c090a0] hover:text-[#9a4065]">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -415,6 +328,12 @@ export default function AdminPage() {
                 </svg>
               </button>
             </div>
+            <p className={`text-xs mb-4 px-2 py-0.5 rounded-full border w-fit ${
+              selected.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+              selected.status === 'pending'   ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                                               'bg-rose-50 text-rose-400 border-rose-200'
+            }`}>{STATUS_LABEL[selected.status]}</p>
+
             <div className="space-y-2.5 text-sm mb-5">
               {[
                 { label: '姓名',     value: selected.name },
@@ -434,29 +353,40 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+
             <div className="flex gap-2">
               {selected.status === 'pending' && <>
                 <button disabled={acting} onClick={() => updateStatus(selected.id, 'confirmed')}
-                  className="flex-1 py-2.5 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-xl transition-colors disabled:opacity-50">确认预约</button>
+                  className="flex-1 py-2.5 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-xl disabled:opacity-50 transition-colors">
+                  确认预约
+                </button>
                 <button disabled={acting} onClick={() => updateStatus(selected.id, 'rejected')}
-                  className="flex-1 py-2.5 text-sm bg-rose-50 hover:bg-rose-100 text-rose-400 border border-rose-200 rounded-xl transition-colors disabled:opacity-50">拒绝</button>
+                  className="flex-1 py-2.5 text-sm bg-rose-50 hover:bg-rose-100 text-rose-400 border border-rose-200 rounded-xl disabled:opacity-50 transition-colors">
+                  拒绝
+                </button>
               </>}
               {selected.status === 'confirmed' && (
                 <button disabled={acting} onClick={() => updateStatus(selected.id, 'rejected')}
-                  className="flex-1 py-2.5 text-sm bg-rose-50 hover:bg-rose-100 text-rose-400 border border-rose-200 rounded-xl transition-colors disabled:opacity-50">标记为已拒绝</button>
+                  className="flex-1 py-2.5 text-sm bg-rose-50 hover:bg-rose-100 text-rose-400 border border-rose-200 rounded-xl disabled:opacity-50 transition-colors">
+                  标记已拒绝
+                </button>
               )}
               {selected.status === 'rejected' && (
                 <button disabled={acting} onClick={() => updateStatus(selected.id, 'confirmed')}
-                  className="flex-1 py-2.5 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-xl transition-colors disabled:opacity-50">恢复确认</button>
+                  className="flex-1 py-2.5 text-sm bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 rounded-xl disabled:opacity-50 transition-colors">
+                  恢复确认
+                </button>
               )}
               <button disabled={acting} onClick={() => { setDeleteConfirm(selected); setSelected(null) }}
-                className="px-4 py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-400 border border-gray-200 rounded-xl transition-colors disabled:opacity-50">删除</button>
+                className="px-4 py-2.5 text-sm bg-gray-50 hover:bg-gray-100 text-gray-400 border border-gray-200 rounded-xl disabled:opacity-50 transition-colors">
+                删除
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Delete Confirm Modal ── */}
+      {/* ── Delete Confirm ── */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setDeleteConfirm(null)}>
           <div className="bg-white rounded-2xl border border-[#fce8ed] w-full max-w-sm p-6 shadow-xl text-center" onClick={e => e.stopPropagation()}>
@@ -465,7 +395,7 @@ export default function AdminPage() {
             <div className="flex gap-3">
               <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-2.5 text-sm border border-[#fce8ed] text-[#c090a0] hover:bg-[#fff0f5] rounded-xl transition-colors">取消</button>
               <button disabled={acting} onClick={() => deleteBooking(deleteConfirm.id)}
-                className="flex-1 py-2.5 text-sm bg-rose-500 hover:bg-rose-600 text-white rounded-xl transition-colors disabled:opacity-50">删除</button>
+                className="flex-1 py-2.5 text-sm bg-rose-500 hover:bg-rose-600 text-white rounded-xl disabled:opacity-50 transition-colors">删除</button>
             </div>
           </div>
         </div>
@@ -510,8 +440,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-[#9a4065] mb-1">时间 *</label>
-                  <select value={addForm.timeSlot} onChange={e => setAddForm(f => ({ ...f, timeSlot: e.target.value }))}
-                    className={inputCls}>
+                  <select value={addForm.timeSlot} onChange={e => setAddForm(f => ({ ...f, timeSlot: e.target.value }))} className={inputCls}>
                     <option value="">选择时间</option>
                     {TIME_SLOTS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -519,8 +448,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-xs text-[#9a4065] mb-1">基础服务 *</label>
-                <select value={addForm.basicServiceId} onChange={e => setAddForm(f => ({ ...f, basicServiceId: e.target.value }))}
-                  className={inputCls}>
+                <select value={addForm.basicServiceId} onChange={e => setAddForm(f => ({ ...f, basicServiceId: e.target.value }))} className={inputCls}>
                   <option value="">选择服务</option>
                   {basicServices.map(s => <option key={s.id} value={s.id}>{s.name}（{s.price}）</option>)}
                 </select>
@@ -557,8 +485,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <label className="block text-xs text-[#9a4065] mb-1">状态</label>
-                <select value={addForm.status} onChange={e => setAddForm(f => ({ ...f, status: e.target.value as Status }))}
-                  className={inputCls}>
+                <select value={addForm.status} onChange={e => setAddForm(f => ({ ...f, status: e.target.value as Status }))} className={inputCls}>
                   <option value="confirmed">已确认</option>
                   <option value="pending">待确认</option>
                 </select>
