@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { LangProvider } from './context/LangContext'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import Services from './components/Services'
@@ -25,6 +26,7 @@ function MainSite() {
 
 export default function App() {
   return (
+    <LangProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/"            element={<MainSite />} />
@@ -32,5 +34,6 @@ export default function App() {
         <Route path="/admin/login" element={<AdminLogin />} />
       </Routes>
     </BrowserRouter>
+    </LangProvider>
   )
 }

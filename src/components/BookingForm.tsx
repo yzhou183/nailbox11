@@ -1,6 +1,7 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react'
 import type { BookingFormData, FormErrors } from '../types'
 import { basicServices, addonServices } from '../data/services'
+import { useLang } from '../context/LangContext'
 
 const API = import.meta.env.VITE_API_URL ?? ''
 const ALL_TIME_SLOTS = [
@@ -15,23 +16,23 @@ const INITIAL_FORM: BookingFormData = {
   basicService: '', addonServices: [], notes: '',
 }
 
-function validate(data: BookingFormData): FormErrors {
+function validate(data: BookingFormData, tv: (k: string) => string): FormErrors {
   const errors: FormErrors = {}
-  if (!data.name.trim()) errors.name = '请填写您的姓名'
+  if (!data.name.trim()) errors.name = tv('err_name')
   if (!data.email.trim()) {
-    errors.email = '请填写邮箱地址'
+    errors.email = tv('err_email')
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
-    errors.email = '请输入有效的邮箱地址'
+    errors.email = tv('err_email_inv')
   }
   if (!data.date) {
-    errors.date = '请选择预约日期'
+    errors.date = tv('err_date')
   } else {
     const selected = new Date(data.date + 'T00:00:00')
     const today = new Date(); today.setHours(0, 0, 0, 0)
-    if (selected < today) errors.date = '请选择今天或之后的日期'
+    if (selected < today) errors.date = tv('err_date_past')
   }
-  if (!data.time) errors.time = '请选择预约时间'
-  if (!data.basicService) errors.basicService = '请选择一项基础服务'
+  if (!data.time) errors.time = tv('err_time')
+  if (!data.basicService) errors.basicService = tv('err_service')
   return errors
 }
 
@@ -70,6 +71,9 @@ function FormSection({ title, en }: { title: string; en: string }) {
 }
 
 export default function BookingForm() {
+  const { lang, t } = useLang()
+  const svcName = (name: string, nameEn: string) => lang === 'zh' ? name : nameEn
+
   const [form, setForm]           = useState<BookingFormData>(INITIAL_FORM)
   const [errors, setErrors]       = useState<FormErrors>({})
   const [submitted, setSubmitted] = useState(false)
@@ -122,7 +126,7 @@ export default function BookingForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const errs = validate(form)
+    const errs = validate(form, t)
     if (Object.keys(errs).length > 0) {
       setErrors(errs)
       document.querySelector('[data-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -151,17 +155,17 @@ export default function BookingForm() {
         const avail = await fetch(`${API}/api/bookings/availability?${params}`).then((r) => r.json())
         setBookedSlots(avail.booked ?? [])
         setForm((prev) => ({ ...prev, time: '' }))
-        setSendError('该时间段已被预约，请重新选择时间')
+        setSendError(t('err_conflict'))
         return
       }
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        setSendError(body.error ?? '提交失败，请稍后重试')
+        setSendError(body.error ?? t('err_fail'))
         return
       }
       setSubmitted(true)
     } catch {
-      setSendError('网络错误，请检查连接后重试，或直接添加微信 nailbox11 预约')
+      setSendError(t('err_network'))
     } finally {
       setSending(false)
     }
@@ -179,18 +183,18 @@ export default function BookingForm() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
-          <h2 className="font-serif text-3xl text-[#c0507a] mb-1">预约申请已提交</h2>
-          <p className="font-serif text-[#e8789a] italic mb-3">Booking Request Received</p>
-          <p className="text-sm text-[#9a4065] mb-8">确认邮件已发送至您的邮箱，我们会尽快为您确认预约</p>
+          <h2 className="font-serif text-3xl text-[#c0507a] mb-1">{t('success_title')}</h2>
+          <p className="font-serif text-[#e8789a] italic mb-3">{t('success_en')}</p>
+          <p className="text-sm text-[#9a4065] mb-8">{t('success_note')}</p>
           <div className="text-left bg-white border border-[#fce8ed] rounded-2xl p-6 space-y-3 shadow-sm">
             {[
-              { label: '姓名', value: form.name },
-              { label: '邮箱', value: form.email },
-              form.wechat ? { label: '微信', value: form.wechat } : null,
-              { label: '日期', value: form.date },
-              { label: '时间', value: form.time },
-              basic ? { label: '基础服务', value: basic.name } : null,
-              addons.length > 0 ? { label: '增值服务', value: addons.map((a) => a.name).join('、') } : null,
+              { label: t('f_name'),  value: form.name },
+              { label: t('f_email'), value: form.email },
+              form.wechat ? { label: t('f_wechat'), value: form.wechat } : null,
+              { label: t('f_date'),  value: form.date },
+              { label: t('f_time'),  value: form.time },
+              basic ? { label: t('basic_req'), value: svcName(basic.name, basic.nameEn) } : null,
+              addons.length > 0 ? { label: t('addon_label'), value: addons.map((a) => svcName(a.name, a.nameEn)).join('、') } : null,
             ].filter(Boolean).map((row) => (
               <div key={row!.label} className="flex justify-between gap-4 text-sm">
                 <span className="text-[#c090a0] shrink-0">{row!.label}</span>
@@ -199,13 +203,13 @@ export default function BookingForm() {
             ))}
           </div>
           <p className="text-xs text-[#c090a0] mt-6 leading-relaxed">
-            如有急事请添加微信：<span className="text-[#e8789a] font-medium"> nailbox11</span>
+            {t('success_wechat')}<span className="text-[#e8789a] font-medium"> nailbox11</span>
           </p>
           <button
             onClick={() => { setSubmitted(false); setForm(INITIAL_FORM); setErrors({}); setBookedSlots([]) }}
             className="mt-8 px-6 py-2.5 border border-[#f0a0b8] text-[#e8789a] hover:bg-[#fce8ed] text-sm rounded-full transition-colors"
           >
-            重新预约
+            {t('rebook')}
           </button>
         </div>
       </section>
@@ -216,8 +220,8 @@ export default function BookingForm() {
     <section id="booking" className="py-24 px-6 bg-[#fff5f8]">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-[10px] tracking-[0.42em] uppercase text-[#c090a0] mb-3">Book Appointment</p>
-          <h2 className="font-serif text-4xl md:text-5xl text-[#c0507a] font-light">立即预约</h2>
+          <p className="text-[10px] tracking-[0.42em] uppercase text-[#c090a0] mb-3">{t('book_eyebrow')}</p>
+          <h2 className="font-serif text-4xl md:text-5xl text-[#c0507a] font-light">{t('book_title')}</h2>
           <div className="flex items-center justify-center gap-3 mt-5">
             <div className="w-10 h-px bg-[#f9d0da]" />
             <svg width="8" height="8" viewBox="0 0 12 12">
@@ -230,21 +234,21 @@ export default function BookingForm() {
         <form onSubmit={handleSubmit} noValidate className="space-y-10">
           {/* Contact */}
           <div>
-            <FormSection title="个人信息" en="Contact Info" />
+            <FormSection title={t('book_contact')} en={t('book_contact_en')} />
             <div className="grid sm:grid-cols-2 gap-5">
               <div data-error={errors.name ? true : undefined}>
-                <InputField label="姓名" required error={errors.name}>
-                  <input type="text" name="name" value={form.name} onChange={handleChange} placeholder="您的姓名" className={inputClass(errors.name)} />
+                <InputField label={t('f_name')} required error={errors.name}>
+                  <input type="text" name="name" value={form.name} onChange={handleChange} placeholder={t('f_name')} className={inputClass(errors.name)} />
                 </InputField>
               </div>
               <div data-error={errors.email ? true : undefined}>
-                <InputField label="邮箱" labelEn="Email" required error={errors.email}>
+                <InputField label={t('f_email')} labelEn={t('f_email_en')} required error={errors.email}>
                   <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="your@email.com" className={inputClass(errors.email)} />
                 </InputField>
               </div>
               <div className="sm:col-span-2">
-                <InputField label="微信号" labelEn="WeChat">
-                  <input type="text" name="wechat" value={form.wechat} onChange={handleChange} placeholder="您的微信号（方便我们确认预约）" className={inputClass()} />
+                <InputField label={t('f_wechat')} labelEn={t('f_wechat_en')}>
+                  <input type="text" name="wechat" value={form.wechat} onChange={handleChange} placeholder={t('f_wechat_ph')} className={inputClass()} />
                 </InputField>
               </div>
             </div>
@@ -252,13 +256,13 @@ export default function BookingForm() {
 
           {/* Services */}
           <div>
-            <FormSection title="服务选择" en="Service Selection" />
+            <FormSection title={t('book_svc')} en={t('book_svc_en')} />
 
             {/* Basic */}
             <div className="mb-8" data-error={errors.basicService ? true : undefined}>
               <p className="text-sm text-[#9a4065] mb-3">
-                基础服务<span className="text-[#e8789a] ml-1">*</span>
-                <span className="text-xs text-[#c090a0] ml-2">（选择一项）</span>
+                {t('basic_req')}<span className="text-[#e8789a] ml-1">*</span>
+                <span className="text-xs text-[#c090a0] ml-2">{t('basic_note')}</span>
               </p>
               <div className="space-y-3">
                 {basicServices.map((service) => {
@@ -275,7 +279,7 @@ export default function BookingForm() {
                           {selected && <div className="w-2 h-2 rounded-full bg-[#e8789a]" />}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-[#c0507a]">{service.name}</p>
+                          <p className="text-sm font-medium text-[#c0507a]">{svcName(service.name, service.nameEn)}</p>
                           {service.duration && <p className="text-xs text-[#c090a0]">{service.duration}</p>}
                         </div>
                       </div>
@@ -291,7 +295,7 @@ export default function BookingForm() {
             {/* Addons */}
             <div>
               <p className="text-sm text-[#9a4065] mb-3">
-                增值服务<span className="text-xs text-[#c090a0] ml-2">（可多选，选填）</span>
+                {t('addon_label')}<span className="text-xs text-[#c090a0] ml-2">{t('addon_note')}</span>
               </p>
               <div className="grid sm:grid-cols-2 gap-2.5">
                 {addonServices.map((service) => {
@@ -312,7 +316,7 @@ export default function BookingForm() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-[#c0507a] leading-snug">{service.name}</p>
+                          <p className="text-xs font-medium text-[#c0507a] leading-snug">{svcName(service.name, service.nameEn)}</p>
                           {service.duration && <p className="text-[10px] text-[#c090a0]">{service.duration}</p>}
                         </div>
                       </div>
@@ -327,10 +331,10 @@ export default function BookingForm() {
 
           {/* Date & Time */}
           <div>
-            <FormSection title="预约时间" en="Appointment Time" />
+            <FormSection title={t('book_time')} en={t('book_time_en')} />
             <div className="grid sm:grid-cols-2 gap-5 mb-5">
               <div data-error={errors.date ? true : undefined} className="sm:col-span-2">
-                <InputField label="日期" labelEn="Date" required error={errors.date}>
+                <InputField label={t('f_date')} labelEn={t('f_date_en')} required error={errors.date}>
                   <input type="date" name="date" value={form.date} onChange={handleChange} min={today} className={inputClass(errors.date)} />
                 </InputField>
               </div>
@@ -339,8 +343,8 @@ export default function BookingForm() {
             {/* Time slot picker */}
             <div data-error={errors.time ? true : undefined}>
               <p className="text-sm text-[#9a4065] mb-3">
-                时间<span className="text-[#e8789a] ml-1">*</span>
-                {loadingSlots && <span className="text-xs text-[#c090a0] ml-2">查询中…</span>}
+                {t('f_time')}<span className="text-[#e8789a] ml-1">*</span>
+                {loadingSlots && <span className="text-xs text-[#c090a0] ml-2">{t('checking')}</span>}
               </p>
               <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                 {ALL_TIME_SLOTS.map((slot) => {
@@ -367,7 +371,7 @@ export default function BookingForm() {
                     >
                       {slot}
                       {booked && (
-                        <span className="block text-[10px] font-normal mt-0.5 text-[#d0b8c0]">已预约</span>
+                        <span className="block text-[10px] font-normal mt-0.5 text-[#d0b8c0]">{t('booked')}</span>
                       )}
                     </button>
                   )
@@ -379,8 +383,8 @@ export default function BookingForm() {
 
           {/* Notes */}
           <div>
-            <FormSection title="备注" en="Notes" />
-            <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} placeholder="款式参考、特殊要求、或其他说明（选填）" className={inputClass() + ' resize-none'} />
+            <FormSection title={t('book_notes')} en={t('book_notes_en')} />
+            <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} placeholder={t('notes_ph')} className={inputClass() + ' resize-none'} />
           </div>
 
           {sendError && (
@@ -401,11 +405,11 @@ export default function BookingForm() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
                   </svg>
-                  提交中…
+                  {t('submitting')}
                 </>
-              ) : '提交预约 · Book Now'}
+              ) : t('submit')}
             </button>
-            <p className="text-center text-xs text-[#c090a0] mt-4">提交后确认邮件将发送至您的邮箱</p>
+            <p className="text-center text-xs text-[#c090a0] mt-4">{t('submit_note')}</p>
           </div>
         </form>
       </div>
